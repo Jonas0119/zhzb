@@ -7,7 +7,9 @@
       "config": {
         "maxLambdaSize": "50mb",
         "buildCommand": "npm run build", 
-        "installCommand": "npm install"  
+        "installCommand": "npm install",
+        "outputDirectory": "dist",
+        "includeFiles": ["dist/**"]
       }
     },
     {
@@ -23,14 +25,14 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/dist/main.js"
+      "dest": "/backend/dist/main.js"
     },
     {
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/frontend/dist/index.html"
     }
   ]
 }
