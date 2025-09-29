@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
   email VARCHAR(100) NOT NULL UNIQUE COMMENT '邮箱',
   password VARCHAR(255) NOT NULL COMMENT '密码hash',
+  role ENUM('user', 'admin') DEFAULT 'user' COMMENT '用户角色',
   aic_points DECIMAL(10, 4) DEFAULT 1000.0000 COMMENT 'AIC积分',
   hh_points DECIMAL(10, 4) DEFAULT 1000.0000 COMMENT 'HH积分',
   frozen_aic_points DECIMAL(10, 4) DEFAULT 0.0000 COMMENT '冻结AIC积分',
@@ -19,7 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   INDEX idx_username (username),
-  INDEX idx_email (email)
+  INDEX idx_email (email),
+  INDEX idx_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- 订单表
@@ -39,6 +41,8 @@ CREATE TABLE IF NOT EXISTS orders (
   buyer_name VARCHAR(50) NULL COMMENT '买方用户名',
   comment TEXT NULL COMMENT '评价内容',
   rating INT DEFAULT 5 COMMENT '评分(1-5)',
+  paid_at TIMESTAMP NULL COMMENT '付款时间',
+  completed_at TIMESTAMP NULL COMMENT '完成时间',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -54,7 +58,7 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS transactions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL COMMENT '用户ID',
-  type ENUM('recharge', 'withdraw', 'buy', 'sell', 'fee', 'expense') NOT NULL COMMENT '交易类型',
+  type ENUM('recharge', 'withdraw', 'buy', 'sell', 'fee') NOT NULL COMMENT '交易类型',
   status ENUM('pending', 'completed', 'failed') DEFAULT 'completed' COMMENT '交易状态',
   title VARCHAR(100) NOT NULL COMMENT '交易标题',
   amount DECIMAL(10, 2) NOT NULL COMMENT '交易金额',
@@ -101,12 +105,29 @@ CREATE TABLE IF NOT EXISTS announcements (
   INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='公告表';
 
+-- 管理员日志表
+CREATE TABLE IF NOT EXISTS admin_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  admin_id INT NOT NULL COMMENT '管理员用户ID',
+  action VARCHAR(100) NOT NULL COMMENT '操作动作',
+  target_user_id INT NULL COMMENT '目标用户ID',
+  details JSON NULL COMMENT '操作详情',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_admin_id (admin_id),
+  INDEX idx_target_user_id (target_user_id),
+  INDEX idx_action (action),
+  INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='管理员日志表';
+
 -- 插入默认用户数据
-INSERT INTO users (username, email, password, aic_points, hh_points, balance) VALUES
-('demo_user', 'demo@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye', 1000.0000, 1000.0000, 10000.00),
-('积分大户01', 'trader1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye', 2000.0000, 1500.0000, 15000.00),
-('积分商家02', 'trader2@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye', 1800.0000, 2200.0000, 18000.00),
-('积分投资者03', 'investor@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye', 3000.0000, 1000.0000, 25000.00);
+INSERT INTO users (username, email, password, role, aic_points, hh_points, balance) VALUES
+('demo_user', 'demo@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'user', 1000.0000, 1000.0000, 10000.00),
+('积分大户01', 'trader1@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'user', 2000.0000, 1500.0000, 15000.00),
+('积分商家02', 'trader2@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'user', 1800.0000, 2200.0000, 18000.00),
+('积分投资者03', 'investor@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'user', 3000.0000, 1000.0000, 25000.00),
+('admin', 'admin@zhzb.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'admin', 5000.0000, 5000.0000, 50000.00);
 
 -- 插入默认市场订单
 INSERT INTO orders (user_id, seller_id, type, status, point_type, amount, remaining_amount, unit_price, total_price, seller_name) VALUES
