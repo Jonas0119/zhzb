@@ -26,14 +26,16 @@ export class Announcement {
   content: string;
 
   @Column({
-    type: 'enum',
+    type: 'varchar',
+    length: 20,
     enum: AnnouncementType,
     default: AnnouncementType.NOTICE
   })
   type: AnnouncementType;
 
   @Column({
-    type: 'enum',
+    type: 'varchar',
+    length: 20,
     enum: AnnouncementStatus,
     default: AnnouncementStatus.PUBLISHED
   })

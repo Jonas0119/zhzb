@@ -25,13 +25,15 @@ export class Order {
   id: number;
 
   @Column({
-    type: 'enum',
+    type: 'varchar',
+    length: 10,
     enum: OrderType
   })
   type: OrderType;
 
   @Column({
-    type: 'enum',
+    type: 'varchar',
+    length: 20,
     enum: OrderStatus,
     default: OrderStatus.PENDING
   })
@@ -39,7 +41,8 @@ export class Order {
 
   @Column({
     name: 'point_type',
-    type: 'enum',
+    type: 'varchar',
+    length: 10,
     enum: PointType
   })
   pointType: PointType;

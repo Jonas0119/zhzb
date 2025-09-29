@@ -26,12 +26,12 @@ export class AdminService {
     const totalUsers = await this.userRepo.count();
     const activeUsers = await this.userRepo
       .createQueryBuilder('user')
-      .where('user.updatedAt > DATE_SUB(NOW(), INTERVAL 7 DAY)')
+      .where('user.updatedAt > NOW() - INTERVAL \'7 days\'')
       .getCount();
 
     const todayUsers = await this.userRepo
       .createQueryBuilder('user')
-      .where('DATE(user.createdAt) = CURDATE()')
+      .where('DATE_TRUNC(\'day\', user.createdAt) = CURRENT_DATE')
       .getCount();
 
     // 获取积分统计

@@ -17,7 +17,12 @@ export class User {
   @Column()
   password: string;
 
-  @Column({ type: 'enum', enum: ['user', 'admin'], default: 'user' })
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: 'user',
+    enum: ['user', 'admin']
+  })
   role: string;
 
   @Column('decimal', { name: 'aic_points', precision: 10, scale: 4, default: 1000, transformer: { to: (value: number) => value, from: (value: string) => parseFloat(value) } })

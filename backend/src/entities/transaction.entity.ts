@@ -21,13 +21,15 @@ export class Transaction {
   id: number;
 
   @Column({
-    type: 'enum',
+    type: 'varchar',
+    length: 20,
     enum: TransactionType
   })
   type: TransactionType;
 
   @Column({
-    type: 'enum',
+    type: 'varchar',
+    length: 20,
     enum: TransactionStatus,
     default: TransactionStatus.COMPLETED
   })

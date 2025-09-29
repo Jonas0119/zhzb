@@ -21,20 +21,16 @@ import { AdminModule } from './modules/admin/admin.module';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       useFactory: () => ({
-        type: 'mysql',
-        host: process.env.DB_HOST || '127.0.0.1',
-        port: parseInt(process.env.DB_PORT || '3306', 10),
-        username: process.env.DB_USER || 'root',
-        password: process.env.DB_PASS || 'Tjfae@123',
-        database: process.env.DB_NAME || 'zhzb',
+        type: 'postgres',
+        url: process.env.DATABASE_URL,
         entities: [User, Order, Transaction, BankCard, Announcement, AdminLog],
         synchronize: false,
-        timezone: '+08:00',
-        charset: 'utf8mb4',
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
         extra: {
-          charset: 'utf8mb4_unicode_ci'
+          max: 5,
+          connectionTimeoutMillis: 30000,
+          idleTimeoutMillis: 30000,
         },
-        url: `mysql://${process.env.DB_USER || 'root'}:${process.env.DB_PASS || 'Tjfae@123'}@${process.env.DB_HOST || '127.0.0.1'}:${process.env.DB_PORT || '3306'}/${process.env.DB_NAME || 'zhzb'}?charset=utf8mb4&timezone=+08:00`
       })
     }),
     TypeOrmModule.forFeature([User, Order, Transaction, BankCard, Announcement, AdminLog]),
