@@ -38,9 +38,9 @@ export class AdminService {
     const pointsStats = await this.userRepo
       .createQueryBuilder('user')
       .select([
-        'SUM(user.aicPoints) as totalAicPoints',
-        'SUM(user.hhPoints) as totalHhPoints',
-        'SUM(user.balance) as totalBalance'
+        'SUM(user.aicPoints) as "totalAicPoints"',
+        'SUM(user.hhPoints) as "totalHhPoints"',
+        'SUM(user.balance) as "totalBalance"'
       ])
       .getRawOne();
 
@@ -51,9 +51,9 @@ export class AdminService {
         todayNew: todayUsers
       },
       points: {
-        totalAic: Number(pointsStats.totalAicPoints) || 0,
-        totalHh: Number(pointsStats.totalHhPoints) || 0,
-        totalBalance: Number(pointsStats.totalBalance) || 0
+        totalAic: Number(pointsStats?.totalAicPoints) || 0,
+        totalHh: Number(pointsStats?.totalHhPoints) || 0,
+        totalBalance: Number(pointsStats?.totalBalance) || 0
       }
     };
   }

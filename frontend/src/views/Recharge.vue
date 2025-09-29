@@ -34,14 +34,14 @@
             name="currentBalance"
             label="当前余额"
             readonly
-            :value="`¥${userStore.wallet.balance.toFixed(2)}`"
+            v-model="currentBalanceModel"
           />
 
           <van-field
             name="afterRecharge"
             label="充值后余额"
             readonly
-            :value="`¥${afterRechargeBalance.toFixed(2)}`"
+            v-model="afterAmountModel"
           />
 
           <div class="submit-section">
@@ -74,17 +74,25 @@
       <div class="recent-records card">
         <h4>最近充值记录</h4>
         <div class="records-list">
-          <div
-            v-for="record in recentRecharges"
-            :key="record.id"
-            class="record-item"
-          >
-            <div class="record-info">
-              <div class="record-amount">+¥{{ record.amount.toFixed(2) }}</div>
-              <div class="record-time">{{ record.time }}</div>
-            </div>
-            <div class="record-status success">成功</div>
+          <div v-if="loadingRecords">
+            <van-skeleton title :row="3" />
           </div>
+          <div v-else-if="recentRecharges.length === 0">
+            <van-empty description="暂无充值记录" />
+          </div>
+          <template v-else>
+            <div
+              v-for="record in recentRecharges"
+              :key="record.id"
+              class="record-item"
+            >
+              <div class="record-info">
+                <div class="record-amount">+¥{{ Number(record.amount).toFixed(2) }}</div>
+                <div class="record-time">{{ record.time }}</div>
+              </div>
+              <div class="record-status success">成功</div>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -106,10 +114,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/store/user'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showToast } from 'vant'
+import { walletApi } from '@/utils/api'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -125,32 +134,33 @@ const formData = ref({
 // 快捷金额选项
 const quickAmounts = [100, 500, 1000, 2000, 5000, 10000]
 
-// Mock充值记录
-const recentRecharges = [
-  {
-    id: 1,
-    amount: 10000,
-    time: '2024-01-15 14:30:25',
-    status: 'success'
-  },
-  {
-    id: 2,
-    amount: 5000,
-    time: '2024-01-10 09:20:15',
-    status: 'success'
-  },
-  {
-    id: 3,
-    amount: 2000,
-    time: '2024-01-05 16:45:30',
-    status: 'success'
-  }
-]
+// 最近充值记录（实时从后端获取）
+const recentRecharges = ref([])
+const loadingRecords = ref(false)
 
 // 计算属性
 const afterRechargeBalance = computed(() => {
   const amount = parseFloat(formData.value.amount) || 0
   return userStore.wallet.balance + amount
+})
+
+// 当前余额 v-model 回显
+const currentBalanceModel = computed({
+  get() {
+    const bal = Number(userStore.wallet.balance || 0)
+    return `¥${bal.toFixed(2)}`
+  },
+  set(_) {}
+})
+
+// 用于 v-model 回显的计算属性（只读绑定）
+const afterAmountModel = computed({
+  get() {
+    return `¥${afterRechargeBalance.value.toFixed(2)}`
+  },
+  set(_) {
+    // 保持只读，不处理外部写入
+  }
 })
 
 const isFormValid = computed(() => {
@@ -182,8 +192,10 @@ const confirmRecharge = async () => {
 
     showSuccessToast('充值成功')
 
-    // 重置表单
+    // 重置表单并刷新列表/钱包
     formData.value.amount = ''
+    await userStore.fetchWalletInfo()
+    await loadRecentRecharges()
 
     setTimeout(() => { router.back() }, 800)
 
@@ -192,6 +204,34 @@ const confirmRecharge = async () => {
   } finally {
     submitting.value = false
     showConfirmDialog.value = false
+  }
+}
+
+// 页面加载时获取最新钱包余额与积分
+onMounted(async () => {
+  try {
+    await userStore.fetchWalletInfo()
+    await loadRecentRecharges()
+  } catch (e) {
+    // 拉取失败不阻塞页面
+  }
+})
+
+// 加载最近充值记录（仅取前3条充值类型）
+const loadRecentRecharges = async () => {
+  try {
+    loadingRecords.value = true
+    const list = await walletApi.getTransactions({ page: 1, limit: 20 })
+    const rechargeOnly = (list || []).filter(item => item.type === 'recharge')
+    recentRecharges.value = rechargeOnly.slice(0, 3).map(r => ({
+      id: r.id,
+      amount: Number(r.amount),
+      time: new Date(r.createdAt).toLocaleString('zh-CN')
+    }))
+  } catch (err) {
+    // 忽略错误提示，页面已有其它提示
+  } finally {
+    loadingRecords.value = false
   }
 }
 </script>

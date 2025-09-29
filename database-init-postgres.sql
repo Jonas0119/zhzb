@@ -157,3 +157,81 @@ VALUES
 ('欢迎使用智慧账簿', '欢迎使用智慧账簿系统，开始您的积分交易之旅！', 'notice', 'published'),
 ('系统维护通知', '系统将于每周日凌晨2-4点进行维护，请合理安排交易时间。', 'system', 'published')
 ON CONFLICT DO NOTHING;
+
+-- =============================================
+-- 兼容旧版本数据库的修复（可重复执行，安全）
+-- 若数据库是由早期脚本创建，可能缺失以下列或约束。
+-- 该部分语句用于在已有库上补齐结构；全新初始化可忽略。
+-- =============================================
+
+-- 补齐 bank_cards 缺失列
+ALTER TABLE IF EXISTS bank_cards
+  ADD COLUMN IF NOT EXISTS holder_name VARCHAR(100);
+
+ALTER TABLE IF EXISTS bank_cards
+  ADD COLUMN IF NOT EXISTS phone VARCHAR(20);
+
+-- 补齐 announcements 缺失列
+ALTER TABLE IF EXISTS announcements
+  ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'published' CHECK (status IN ('draft','published','archived'));
+
+ALTER TABLE IF EXISTS announcements
+  ADD COLUMN IF NOT EXISTS is_important BOOLEAN DEFAULT false;
+
+-- 补齐 transactions 缺失列
+ALTER TABLE IF EXISTS transactions
+  ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT '';
+
+ALTER TABLE IF EXISTS transactions
+  ADD COLUMN IF NOT EXISTS balance_after DECIMAL(10, 2) DEFAULT 0.00;
+
+ALTER TABLE IF EXISTS transactions
+  ADD COLUMN IF NOT EXISTS related_order_id INTEGER;
+
+-- 相关索引（若未创建）
+CREATE INDEX IF NOT EXISTS idx_transactions_related_order_id ON transactions(related_order_id);
+
+-- 修复/重建 transactions.type 与 transactions.status 的 CHECK 约束
+DO $$
+BEGIN
+  -- 移除旧的类型约束（名称可能不同，这里尝试常见命名与系统生成的命名）
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    WHERE t.relname = 'transactions' AND c.conname = 'transactions_type_check'
+  ) THEN
+    ALTER TABLE transactions DROP CONSTRAINT transactions_type_check;
+  END IF;
+  -- 一些自动命名的检查约束可能叫 transactions_type_check1/2，尝试删除
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    WHERE t.relname = 'transactions' AND c.conname = 'transactions_type_check1'
+  ) THEN
+    ALTER TABLE transactions DROP CONSTRAINT transactions_type_check1;
+  END IF;
+
+  -- 重新创建正确的类型检查约束
+  ALTER TABLE transactions
+    ADD CONSTRAINT transactions_type_check CHECK (type IN ('recharge','withdraw','buy','sell','fee'));
+
+  -- 移除旧的状态约束
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    WHERE t.relname = 'transactions' AND c.conname = 'transactions_status_check'
+  ) THEN
+    ALTER TABLE transactions DROP CONSTRAINT transactions_status_check;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint c
+    JOIN pg_class t ON t.oid = c.conrelid
+    WHERE t.relname = 'transactions' AND c.conname = 'transactions_status_check1'
+  ) THEN
+    ALTER TABLE transactions DROP CONSTRAINT transactions_status_check1;
+  END IF;
+
+  -- 重新创建正确的状态检查约束
+  ALTER TABLE transactions
+    ADD CONSTRAINT transactions_status_check CHECK (status IN ('pending','completed','failed'));
+END $$;

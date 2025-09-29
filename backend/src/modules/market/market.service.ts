@@ -142,6 +142,7 @@ export class MarketService {
 
     // 为买家创建购买订单
     const buyOrder = this.orderRepo.create({
+      type: OrderType.BUY,
       userId: buyer.id,
       sellerId: seller.id,
       pointType: order.pointType,
