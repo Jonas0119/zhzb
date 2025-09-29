@@ -33,10 +33,5 @@
   "installCommand": "npm run install:all",
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "backend/dist/main.js": {
-      "maxDuration": 30
-    }
   }
 }
