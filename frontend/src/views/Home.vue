@@ -5,7 +5,7 @@
       <div class="header-content">
         <div class="title-section">
           <div class="app-icon">
-            <van-icon name="balance-pay" size="32" color="#FF7F50" />
+            <van-icon name="balance-pay" size="32" color="#FFFFFF" />
           </div>
           <h1 class="title">智慧账簿</h1>
         </div>
@@ -202,13 +202,20 @@ const showRules = () => {
 .app-icon {
   width: 48px;
   height: 48px;
-  background: rgba(255, 255, 255, 0.2);
+  background: #E55A2B;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.app-icon:hover {
+  background: #D14A1B;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
 .title {
@@ -415,6 +422,11 @@ const showRules = () => {
 .rules-text strong {
   color: var(--text-color);
   font-weight: 600;
+}
+
+.rules-content .van-button {
+  display: block;
+  margin: 0 auto;
 }
 
 /* 响应式设计 */

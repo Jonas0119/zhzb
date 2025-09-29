@@ -273,6 +273,40 @@ const showWithdraw = () => {
   text-align: right;
 }
 
+/* 钱包页面按钮样式优化 */
+.balance-card .van-button--primary {
+  background: white;
+  color: #FF7F50;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+}
+
+.balance-card .van-button--primary:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.balance-card .van-button--default {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+.balance-card .van-button--default:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.points-card .van-button--primary {
+  background: #E55A2B;
+  color: white;
+  border: none;
+  font-weight: 600;
+}
+
+.points-card .van-button--primary:hover {
+  background: #D14A1B;
+}
+
 .points-grid {
   display: flex;
   justify-content: space-around;
