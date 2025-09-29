@@ -30,8 +30,5 @@
     }
   ],
   "buildCommand": "npm run build:all",
-  "installCommand": "npm run install:all",
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "installCommand": "npm run install:all"
 }
