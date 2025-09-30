@@ -8,7 +8,6 @@
         "maxLambdaSize": "50mb",
         "buildCommand": "npm run build", 
         "installCommand": "npm install",
-        "outputDirectory": "dist",
         "includeFiles": ["dist/**"]
       }
     },
@@ -26,9 +25,6 @@
     {
       "src": "/api/(.*)",
       "dest": "/backend/dist/main.js"
-    },
-    {
-      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
