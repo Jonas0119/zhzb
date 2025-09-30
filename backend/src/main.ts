@@ -23,7 +23,7 @@ export default async function handler(req: any, res: any) {
 
     // Enable CORS for production
     app.enableCors({
-      origin: true,
+      origin: process.env.CORS_ORIGIN || 'https://zhzb.vercel.app',
       credentials: true,
     });
 
