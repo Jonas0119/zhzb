@@ -3,12 +3,6 @@
   "buildCommand": "npm run build:all",
   "installCommand": "npm run install:all",
   "outputDirectory": "frontend/dist",
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 30
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
