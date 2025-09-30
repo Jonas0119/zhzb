@@ -36,11 +36,17 @@ api.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response
       if (status === 401) {
-        // token过期或无效，清除本地存储并跳转到登录页
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        showToast('登录已过期，请重新登录')
-        // 这里可以跳转到登录页，但由于是demo，暂时不实现
+        // 检查错误消息来区分不同类型的401错误
+        if (data?.message === '账号或密码错误') {
+          // 账号或密码错误，不清除token
+          showToast('账号或密码错误')
+        } else {
+          // token过期或无效，清除本地存储并跳转到登录页
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          showToast('登录已过期，请重新登录')
+          // 这里可以跳转到登录页，但由于是demo，暂时不实现
+        }
       } else {
         showToast(data?.message || error.message || '网络错误')
       }
