@@ -1,34 +1,16 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "backend/package.json", 
-      "use": "@vercel/node",
-      "config": {
-        "maxLambdaSize": "50mb",
-        "buildCommand": "npm run build", 
-        "installCommand": "npm install",
-        "includeFiles": ["dist/**"]
-      }
-    },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist",
-        "buildCommand": "npm run build", 
-        "installCommand": "npm install"  
-      }
-    }
-  ],
+  "buildCommand": "npm run build:all",
+  "installCommand": "npm run install:all",
+  "outputDirectory": "frontend/dist",
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/dist/main.js"
+      "dest": "/api/index.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/frontend/dist/index.html"
+      "dest": "/$1"
     }
   ]
 }

@@ -44,3 +44,5 @@ Thumbs.db
 *.db
 *.sqlite
 vercel_old.json
+vercel.json.backup
+vercel-with-builds.json
