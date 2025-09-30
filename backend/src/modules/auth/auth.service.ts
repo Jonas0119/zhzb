@@ -24,15 +24,26 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const exists = await this.userRepo.findOne({ where: [{ username: dto.username }, { email: dto.email }] });
-    if (exists) {
-      throw new BadRequestException('用户名或邮箱已存在');
+    try {
+      console.log('Register attempt:', { username: dto.username, email: dto.email });
+
+      const exists = await this.userRepo.findOne({ where: [{ username: dto.username }, { email: dto.email }] });
+      if (exists) {
+        throw new BadRequestException('用户名或邮箱已存在');
+      }
+
+      const passwordHash = await bcrypt.hash(dto.password, 10);
+      const user = this.userRepo.create({ username: dto.username, email: dto.email, password: passwordHash });
+      await this.userRepo.save(user);
+
+      const token = await this.signToken(user);
+      console.log('Register success for user:', user.username);
+
+      return { token, user: this.sanitizeUser(user) };
+    } catch (error) {
+      console.error('Register error:', error);
+      throw error;
     }
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = this.userRepo.create({ username: dto.username, email: dto.email, password: passwordHash });
-    await this.userRepo.save(user);
-    const token = await this.signToken(user);
-    return { token, user: this.sanitizeUser(user) };
   }
 
   async login(dto: LoginDto) {
