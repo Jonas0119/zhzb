@@ -6,7 +6,7 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 import express from 'express';
 
 // Serverless handler for Vercel
-let cachedServer: any;
+let cachedApp: any;
 
 export default async function handler(req: any, res: any) {
   try {
@@ -25,11 +25,11 @@ export default async function handler(req: any, res: any) {
       return;
     }
 
-    if (!cachedServer) {
-      console.log('Initializing NestJS server...');
+    if (!cachedApp) {
+      console.log('Initializing NestJS application...');
 
-      const server = express();
-      const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
+      const expressApp = express();
+      const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
 
       app.setGlobalPrefix('api');
       app.useGlobalPipes(new ValidationPipe({
@@ -46,14 +46,19 @@ export default async function handler(req: any, res: any) {
       });
 
       await app.init();
-      cachedServer = server;
-      console.log('NestJS server initialized successfully');
+
+      // Get the underlying Express instance
+      cachedApp = expressApp;
+      console.log('NestJS application initialized successfully');
     }
 
-    return cachedServer(req, res);
+    // Handle the request using the cached Express app
+    cachedApp(req, res);
   } catch (error) {
     console.error('Server initialization error:', error);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
   }
 }
 
