@@ -28,30 +28,8 @@ export default async function handler(req: any, res: any) {
     if (!cachedServer) {
       console.log('Initializing Express server for Vercel...');
 
-      // Create Express app directly (Express 4.x compatible)
-      const server = express();
-
-      // Body parsing middleware (Express 4.x style)
-      server.use(express.json({ limit: '10mb' }));
-      server.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-      // CORS middleware (Express 4.x compatible)
-      server.use((req: any, res: any, next: any) => {
-        const origin = process.env.CORS_ORIGIN || 'https://zhzb.vercel.app';
-        res.header('Access-Control-Allow-Origin', origin);
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-        res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
-
-        if (req.method === 'OPTIONS') {
-          res.sendStatus(200);
-        } else {
-          next();
-        }
-      });
-
-      // Create NestJS app with Express instance
-      const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
+      // Create NestJS app with default Express instance
+      const app = await NestFactory.create(AppModule);
 
       // Configure NestJS
       app.setGlobalPrefix('api');
@@ -62,7 +40,16 @@ export default async function handler(req: any, res: any) {
       }));
       app.useGlobalInterceptors(new LoggingInterceptor());
 
+      // Enable CORS for production
+      app.enableCors({
+        origin: process.env.CORS_ORIGIN || 'https://zhzb.vercel.app',
+        credentials: true,
+      });
+
       await app.init();
+
+      // Get the underlying Express instance
+      const server = app.getHttpAdapter().getInstance();
 
       cachedServer = server;
       console.log('Express server initialized successfully for Vercel');
