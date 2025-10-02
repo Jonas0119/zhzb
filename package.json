@@ -35,5 +35,8 @@
     "fullstack"
   ],
   "author": "Jonas0119",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@vercel/speed-insights": "^1.2.0"
+  }
 }

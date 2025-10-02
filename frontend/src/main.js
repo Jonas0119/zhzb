@@ -2,6 +2,7 @@ import { createApp, nextTick } from 'vue'
 import { createPinia } from 'pinia'
 import router from './router'
 import App from './App.vue'
+import { injectSpeedInsights } from '@vercel/speed-insights'; // 正确导入方式
 
 // 引入Vant组件
 import Vant from 'vant'
@@ -15,7 +16,7 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.use(Vant)
-
+injectSpeedInsights(app); 
 app.mount('#app')
 
 // 应用启动时尝试恢复登录态并拉取钱包信息

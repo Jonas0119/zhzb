@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@vitejs/plugin-vue": "^4.5.2",
+    "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.12.2",
     "pinia": "^2.1.7",
     "vant": "^4.8.1",
