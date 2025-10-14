@@ -134,6 +134,12 @@ const routes = [
     name: 'Register',
     component: () => import('@/views/Register.vue'),
     meta: { title: '注册', showTabbar: false, public: true }
+  },
+  {
+    path: '/auth/callback',
+    name: 'AuthCallback',
+    component: () => import('@/views/AuthCallback.vue'),
+    meta: { title: '登录中', showTabbar: false, public: true }
   }
 ]
 

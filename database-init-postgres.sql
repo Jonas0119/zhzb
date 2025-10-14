@@ -193,6 +193,24 @@ ALTER TABLE IF EXISTS transactions
 ALTER TABLE IF EXISTS transactions
   ADD COLUMN IF NOT EXISTS related_order_id INTEGER;
 
+
+  ALTER TABLE users 
+ADD COLUMN github_id VARCHAR(255) UNIQUE,
+ADD COLUMN avatar VARCHAR(500);
+
+-- 修改 password 字段为可空（因为 GitHub 用户可能没有密码）
+ALTER TABLE users 
+ALTER COLUMN password DROP NOT NULL;
+
+-- 创建索引以提高查询性能
+CREATE INDEX idx_users_github_id ON users(github_id);
+CREATE INDEX idx_users_email ON users(email);
+
+-- 添加 Google 相关字段
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+
 -- 相关索引（若未创建）
 CREATE INDEX IF NOT EXISTS idx_transactions_related_order_id ON transactions(related_order_id);
 

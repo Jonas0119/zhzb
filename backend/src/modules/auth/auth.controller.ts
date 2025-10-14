@@ -26,6 +26,18 @@ class LoginDto {
   password: string;
 }
 
+class GitHubLoginDto {
+  @IsString()
+  @IsNotEmpty()
+  accessToken: string;
+}
+
+class GoogleLoginDto {
+  @IsString()
+  @IsNotEmpty()
+  accessToken: string;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -38,6 +50,16 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('github-login')
+  githubLogin(@Body() dto: GitHubLoginDto) {
+    return this.authService.githubLogin(dto);
+  }
+
+  @Post('google-login')
+  googleLogin(@Body() dto: GoogleLoginDto) {
+    return this.authService.googleLogin(dto);
   }
 
   @UseGuards(JwtAuthGuard)

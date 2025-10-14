@@ -192,3 +192,91 @@ VITE_API_BASE_URL=https://your-backend-xxx.vercel.app/api
 2. 配置CDN缓存策略
 3. 监控性能和错误日志
 4. 设置告警通知
+
+
+# GitHub 登录配置指南
+
+## 1. Supabase 配置
+
+### 1.1 创建 Supabase 项目
+1. 访问 [Supabase](https://supabase.com) 并创建新项目
+2. 在项目设置中获取以下信息：
+   - Project URL
+   - Anon Key
+   - Service Role Key
+
+### 1.2 配置 GitHub OAuth
+1. 在 Supabase 项目控制台中，进入 Authentication > Providers
+2. 启用 GitHub 提供商
+3. 配置 GitHub OAuth App：
+   - 在 GitHub 设置中创建新的 OAuth App
+   - Authorization callback URL: `https://your-project.supabase.co/auth/v1/callback`
+   - 将 Client ID 和 Client Secret 填入 Supabase
+
+## 2. 环境变量配置
+
+### 2.1 后端环境变量
+在 `backend/.env` 文件中添加：
+```env
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+```
+
+### 2.2 前端环境变量
+在 `frontend/.env` 文件中添加：
+```env
+# Supabase
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+## 3. 数据库迁移
+
+运行以下 SQL 脚本来更新数据库结构：
+```sql
+-- 执行 database-migration-github.sql 中的内容
+```
+
+## 4. 功能说明
+
+### 4.1 登录流程
+1. 用户点击 "使用 GitHub 登录" 按钮
+2. 重定向到 GitHub OAuth 授权页面
+3. 用户授权后，GitHub 重定向到 Supabase
+4. Supabase 处理 OAuth 回调并返回 access token
+5. 前端将 access token 发送到后端 `/auth/github-login` 端点
+6. 后端验证 token 并创建/更新用户信息
+7. 返回 JWT token 给前端
+
+### 4.2 用户信息同步
+- 首次登录：创建新用户，使用 GitHub 用户名和邮箱
+- 再次登录：更新现有用户信息（如头像）
+- 支持 GitHub 用户和传统用户共存
+
+### 4.3 安全特性
+- 使用 Supabase 服务端验证 GitHub access token
+- 支持 JWT token 认证
+- 密码字段对 GitHub 用户可选
+
+## 5. 测试
+
+1. 启动后端服务：`npm run dev:backend`
+2. 启动前端服务：`npm run dev:frontend`
+3. 访问登录页面，点击 "使用 GitHub 登录"
+4. 完成 GitHub 授权流程
+5. 验证用户信息是否正确保存
+
+## 6. 故障排除
+
+### 常见问题
+1. **OAuth 回调失败**：检查 GitHub OAuth App 的 callback URL 配置
+2. **环境变量未生效**：确保重启开发服务器
+3. **数据库字段错误**：运行数据库迁移脚本
+4. **Supabase 配置错误**：检查项目 URL 和密钥是否正确
+
+### 调试技巧
+- 查看浏览器控制台和网络请求
+- 检查后端日志输出
+- 验证 Supabase 项目配置

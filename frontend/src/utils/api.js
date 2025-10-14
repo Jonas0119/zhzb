@@ -65,6 +65,12 @@ export const userApi = {
   // 用户登录
   login: (data) => api.post('/auth/login', data),
 
+  // GitHub 登录
+  githubLogin: (data) => api.post('/auth/github-login', data),
+
+  // Google 登录
+  googleLogin: (data) => api.post('/auth/google-login', data),
+
   // 获取用户信息
   getProfile: () => api.get('/auth/profile'),
 

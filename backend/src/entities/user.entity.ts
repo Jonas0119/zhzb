@@ -14,8 +14,17 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  @Column({ nullable: true })
   password: string;
+
+  @Column({ name: 'github_id', nullable: true, unique: true })
+  githubId: string;
+
+  @Column({ name: 'google_id', nullable: true, unique: true })
+  googleId: string;
+
+  @Column({ nullable: true })
+  avatar: string;
 
   @Column({
     type: 'varchar',
