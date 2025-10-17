@@ -10,6 +10,11 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: [
+      'localhost',
+      'nonanesthetized-nolan-riantly.ngrok-free.dev',  // 添加您的ngrok主机
+      '.ngrok-free.dev'  // 通配符，覆盖未来ngrok URL（推荐）
+    ],
     host: '0.0.0.0',
     port: 3001,
     proxy: {

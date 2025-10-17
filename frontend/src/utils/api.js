@@ -117,7 +117,10 @@ export const walletApi = {
   // 获取钱包信息
   getInfo: () => api.get('/wallet/info'),
 
-  // 充值
+  // 获取充值产品列表
+  getRechargeProducts: () => api.get('/wallet/recharge-products'),
+
+  // 充值（使用productId）
   recharge: (data) => api.post('/wallet/recharge', data),
 
   // 提现

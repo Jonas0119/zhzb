@@ -13,6 +13,7 @@
     "@vercel/speed-insights": "^1.2.0",
     "@vitejs/plugin-vue": "^4.5.2",
     "axios": "^1.12.2",
+    "creem": "^0.4.0",
     "pinia": "^2.1.7",
     "vant": "^4.8.1",
     "vite": "^5.0.8",

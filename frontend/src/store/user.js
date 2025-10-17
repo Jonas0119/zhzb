@@ -224,9 +224,15 @@ export const useUserStore = defineStore('user', {
       return info
     },
 
-    // 充值（真实 API）
-    async recharge(amount) {
-      const res = await (await import('@/utils/api')).walletApi.recharge({ amount })
+    // 充值（使用productId）
+    async recharge(productId) {
+      const res = await (await import('@/utils/api')).walletApi.recharge({ productId })
+      // 如果返回了checkoutUrl，说明需要跳转到支付页面
+      if (res.checkoutUrl) {
+        window.location.href = res.checkoutUrl
+        return res
+      }
+      // 否则直接更新余额（模拟充值）
       this.wallet.balance = res.balance
       return res
     },

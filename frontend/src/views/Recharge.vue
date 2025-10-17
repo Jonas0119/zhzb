@@ -4,67 +4,71 @@
       <!-- 充值表单 -->
       <div class="form-section card">
         <h3>充值金额</h3>
-        <van-form @submit="onSubmit">
-          <van-field
-            v-model="formData.amount"
-            name="amount"
-            label="充值金额"
-            placeholder="请输入充值金额"
-            type="number"
-            :rules="[
-              { required: true, message: '请输入充值金额' },
-              { pattern: /^\d+(\.\d{1,2})?$/, message: '最多保留2位小数' },
-              { validator: validateAmount, message: '充值金额必须大于0' }
-            ]"
-          />
-
+        
+        <!-- 加载状态 -->
+        <div v-if="loadingProducts" class="loading-section">
+          <van-skeleton title :row="3" />
+        </div>
+        
+        <!-- 产品选择 -->
+        <div v-else class="product-selection">
           <div class="amount-shortcuts">
             <van-button
-              v-for="amount in quickAmounts"
-              :key="amount"
+              v-for="product in rechargeProducts"
+              :key="product.productId"
               size="small"
-              type="default"
-              @click="selectAmount(amount)"
+              :type="selectedProduct?.productId === product.productId ? 'primary' : 'default'"
+              @click="selectProduct(product)"
             >
-              ¥{{ amount }}
+              {{ product.displayPrice }}
             </van-button>
           </div>
+          
+          <!-- 自定义金额输入 -->
+          <!-- <van-field
+            v-model="customAmount"
+            name="customAmount"
+            label="自定义金额"
+            placeholder="请输入充值金额"
+            type="number"
+            @input="onCustomAmountInput"
+          /> -->
+        </div>
 
-          <van-field
-            name="currentBalance"
-            label="当前余额"
-            readonly
-            v-model="currentBalanceModel"
-          />
+        <van-field
+          name="currentBalance"
+          label="当前余额"
+          readonly
+          v-model="currentBalanceModel"
+        />
 
-          <van-field
-            name="afterRecharge"
-            label="充值后余额"
-            readonly
-            v-model="afterAmountModel"
-          />
+        <van-field
+          name="afterRecharge"
+          label="充值后余额"
+          readonly
+          v-model="afterAmountModel"
+        />
 
-          <div class="submit-section">
-            <van-button
-              type="primary"
-              size="large"
-              native-type="submit"
-              :disabled="!isFormValid"
-              :loading="submitting"
-            >
-              确认充值
-            </van-button>
-          </div>
-        </van-form>
+        <div class="submit-section">
+          <van-button
+            type="primary"
+            size="large"
+            @click="onSubmit"
+            :disabled="!isFormValid"
+            :loading="submitting"
+          >
+            确认充值
+          </van-button>
+        </div>
       </div>
 
       <!-- 充值说明 -->
       <div class="notice-section card">
         <h4>充值说明</h4>
         <ul class="notice-list">
-          <li>本应用为演示版本，采用模拟充值功能</li>
-          <li>充值无需真实支付，点击确认即可到账</li>
-          <li>充值金额将立即添加到您的钱包余额</li>
+          <li>选择充值金额后，将跳转到Creem支付页面</li>
+          <li>支持信用卡、借记卡等多种支付方式</li>
+          <li>支付成功后，金额将立即到账</li>
           <li>充值记录将保存在资金明细中</li>
           <li>如有问题，请联系客服处理</li>
         </ul>
@@ -101,13 +105,14 @@
     <van-dialog
       v-model:show="showConfirmDialog"
       title="确认充值"
+      show-cancel-button
       @confirm="confirmRecharge"
       @cancel="showConfirmDialog = false"
     >
       <div class="confirm-content">
         <p>充值金额: ¥{{ formData.amount }}</p>
         <p>充值后余额: ¥{{ afterRechargeBalance.toFixed(2) }}</p>
-        <p><strong>确认进行模拟充值操作？</strong></p>
+        <div id="payment-element"></div>
       </div>
     </van-dialog>
   </div>
@@ -126,22 +131,27 @@ const router = useRouter()
 // 响应式数据
 const submitting = ref(false)
 const showConfirmDialog = ref(false)
+const loadingProducts = ref(false)
 
-const formData = ref({
-  amount: ''
-})
-
-// 快捷金额选项
-const quickAmounts = [100, 500, 1000, 2000, 5000, 10000]
+// 充值产品列表
+const rechargeProducts = ref([])
+const selectedProduct = ref(null)
+const customAmount = ref('')
 
 // 最近充值记录（实时从后端获取）
 const recentRecharges = ref([])
 const loadingRecords = ref(false)
 
 // 计算属性
+const currentAmount = computed(() => {
+  if (selectedProduct.value) {
+    return selectedProduct.value.priceCNY
+  }
+  return parseFloat(customAmount.value) || 0
+})
+
 const afterRechargeBalance = computed(() => {
-  const amount = parseFloat(formData.value.amount) || 0
-  return userStore.wallet.balance + amount
+  return userStore.wallet.balance + currentAmount.value
 })
 
 // 当前余额 v-model 回显
@@ -164,46 +174,60 @@ const afterAmountModel = computed({
 })
 
 const isFormValid = computed(() => {
-  const amount = parseFloat(formData.value.amount) || 0
-  return amount > 0 && formData.value.amount !== ''
+  return currentAmount.value > 0
 })
 
 // 方法
-const selectAmount = (amount) => {
-  formData.value.amount = amount.toString()
+const selectProduct = (product) => {
+  selectedProduct.value = product
+  customAmount.value = '' // 清空自定义金额
 }
 
-const validateAmount = (value) => {
-  const amount = parseFloat(value) || 0
-  return amount > 0
+const onCustomAmountInput = () => {
+  selectedProduct.value = null // 清空选中的产品
 }
 
-const onSubmit = () => {
-  if (!isFormValid.value) return
-  showConfirmDialog.value = true
-}
-
-const confirmRecharge = async () => {
+const onSubmit = async () => {
+  if (!isFormValid.value) {
+    showToast('请选择充值金额')
+    return
+  }
+  
   submitting.value = true
-
   try {
-    const amount = parseFloat(formData.value.amount)
-    await userStore.recharge(amount)
-
-    showSuccessToast('充值成功')
-
-    // 重置表单并刷新列表/钱包
-    formData.value.amount = ''
-    await userStore.fetchWalletInfo()
-    await loadRecentRecharges()
-
-    setTimeout(() => { router.back() }, 800)
-
+    let productId
+    
+    if (selectedProduct.value) {
+      // 使用预设产品
+      productId = selectedProduct.value.productId
+    } else {
+      // 自定义金额，需要找到最接近的产品
+      const amount = parseFloat(customAmount.value)
+      const closestProduct = rechargeProducts.value.find(p => p.priceCNY === amount)
+      
+      if (closestProduct) {
+        productId = closestProduct.productId
+      } else {
+        showToast('请选择预设的充值金额')
+        return
+      }
+    }
+    
+    // 调用充值接口
+    await userStore.recharge(productId)
+    
+    // 如果返回了checkoutUrl，页面会自动跳转
+    // 如果没有跳转，说明是模拟充值
+    if (!selectedProduct.value) {
+      showSuccessToast('充值成功')
+      await userStore.fetchWalletInfo()
+      await loadRecentRecharges()
+      setTimeout(() => { router.back() }, 800)
+    }
   } catch (error) {
     showToast('充值失败，请重试')
   } finally {
     submitting.value = false
-    showConfirmDialog.value = false
   }
 }
 
@@ -211,11 +235,25 @@ const confirmRecharge = async () => {
 onMounted(async () => {
   try {
     await userStore.fetchWalletInfo()
+    await loadRechargeProducts()
     await loadRecentRecharges()
   } catch (e) {
     // 拉取失败不阻塞页面
   }
 })
+
+// 加载充值产品列表
+const loadRechargeProducts = async () => {
+  try {
+    loadingProducts.value = true
+    const products = await walletApi.getRechargeProducts()
+    rechargeProducts.value = products
+  } catch (error) {
+    showToast('加载充值产品失败')
+  } finally {
+    loadingProducts.value = false
+  }
+}
 
 // 加载最近充值记录（仅取前3条充值类型）
 const loadRecentRecharges = async () => {

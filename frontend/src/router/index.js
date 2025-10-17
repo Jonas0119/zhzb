@@ -140,6 +140,16 @@ const routes = [
     name: 'AuthCallback',
     component: () => import('@/views/AuthCallback.vue'),
     meta: { title: '登录中', showTabbar: false, public: true }
+  },
+  {
+    path: '/recharge-callback',
+    name: 'RechargeCallback',
+    component: () => import('@/views/RechargeCallback.vue'),
+    meta: { 
+      title: '支付结果', 
+      showTabbar: false, 
+      public: true  // 添加public标记，跳过登录检查
+    }
   }
 ]
 
