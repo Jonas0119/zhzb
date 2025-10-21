@@ -1,5 +1,66 @@
 import axios from 'axios'
-import { showToast } from 'vant'
+import { showToast, showNotify } from 'vant'
+
+// 错误码映射表 - 提供更友好的错误提示
+const ERROR_CODE_MAP = {
+  // 通用错误
+  'NETWORK_ERROR': '网络连接失败，请检查网络设置',
+  'TIMEOUT': '请求超时，请稍后重试',
+  'INTERNAL_ERROR': '服务器内部错误，请稍后重试',
+  
+  // 认证相关
+  'INVALID_CREDENTIALS': '账号或密码错误',
+  'TOKEN_EXPIRED': '登录已过期，请重新登录',
+  'UNAUTHORIZED': '未授权，请先登录',
+  'FORBIDDEN': '没有权限访问该资源',
+  
+  // 用户相关
+  'USER_NOT_FOUND': '用户不存在',
+  'USER_EXISTS': '用户名已存在',
+  'EMAIL_EXISTS': '邮箱已被注册',
+  
+  // 积分相关
+  'INSUFFICIENT_POINTS': '积分不足',
+  'INSUFFICIENT_BALANCE': '余额不足',
+  'INVALID_POINT_TYPE': '无效的积分类型',
+  
+  // 订单相关
+  'ORDER_NOT_FOUND': '订单不存在',
+  'ORDER_COMPLETED': '订单已完成',
+  'ORDER_CANCELLED': '订单已取消',
+  'ORDER_NOT_AVAILABLE': '订单不可购买',
+  'INSUFFICIENT_AMOUNT': '订单剩余数量不足',
+  'INVALID_ORDER_STATUS': '订单状态不正确',
+  'UNAUTHORIZED_ORDER': '无权操作该订单',
+  
+  // 银行卡相关
+  'CARD_NOT_FOUND': '银行卡不存在',
+  'INVALID_CARD': '无效的银行卡信息',
+  
+  // 交易相关
+  'TRANSACTION_FAILED': '交易失败，请重试',
+  'DOUBLE_SPENDING': '请勿重复提交',
+  
+  // 验证相关
+  'VALIDATION_ERROR': '数据验证失败',
+  'INVALID_PARAMS': '参数错误',
+  'MISSING_PARAMS': '缺少必要参数'
+}
+
+// 根据HTTP状态码返回友好提示
+const getStatusMessage = (status) => {
+  const statusMap = {
+    400: '请求参数错误',
+    401: '未授权，请先登录',
+    403: '没有权限访问',
+    404: '请求的资源不存在',
+    500: '服务器错误，请稍后重试',
+    502: '网关错误',
+    503: '服务暂时不可用',
+    504: '网关超时'
+  }
+  return statusMap[status] || '请求失败'
+}
 
 // 创建axios实例
 const api = axios.create({
@@ -21,6 +82,7 @@ api.interceptors.request.use(
     return config
   },
   (error) => {
+    showToast('请求发送失败')
     return Promise.reject(error)
   }
 )
@@ -33,26 +95,62 @@ api.interceptors.response.use(
     return data
   },
   (error) => {
-    if (error.response) {
-      const { status, data } = error.response
-      if (status === 401) {
-        // 检查错误消息来区分不同类型的401错误
-        if (data?.message === '账号或密码错误') {
-          // 账号或密码错误，不清除token
-          showToast('账号或密码错误')
-        } else {
-          // token过期或无效，清除本地存储并跳转到登录页
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          showToast('登录已过期，请重新登录')
-          // 这里可以跳转到登录页，但由于是demo，暂时不实现
-        }
+    console.error('API错误:', error)
+    
+    // 请求超时
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      showToast(ERROR_CODE_MAP['TIMEOUT'])
+      return Promise.reject(error)
+    }
+    
+    // 网络错误
+    if (!error.response) {
+      showToast(ERROR_CODE_MAP['NETWORK_ERROR'])
+      return Promise.reject(error)
+    }
+    
+    const { status, data } = error.response
+    let message = ''
+    
+    // 处理特殊状态码
+    if (status === 401) {
+      // 检查是否是登录失败（账号密码错误）
+      if (data?.message?.includes('账号或密码错误') || 
+          data?.message?.includes('密码') || 
+          data?.message?.includes('用户名')) {
+        message = ERROR_CODE_MAP['INVALID_CREDENTIALS']
       } else {
-        showToast(data?.message || error.message || '网络错误')
+        // token过期或无效
+        message = ERROR_CODE_MAP['TOKEN_EXPIRED']
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        
+        // 延迟跳转到登录页，给用户看到提示的时间
+        setTimeout(() => {
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login'
+          }
+        }, 1500)
       }
     } else {
-      showToast('网络连接失败')
+      // 尝试从后端返回的错误码获取友好提示
+      const errorCode = data?.code || data?.errorCode
+      if (errorCode && ERROR_CODE_MAP[errorCode]) {
+        message = ERROR_CODE_MAP[errorCode]
+      } else {
+        // 使用后端返回的错误信息
+        message = data?.message || getStatusMessage(status)
+      }
     }
+    
+    // 显示错误提示
+    if (status >= 500) {
+      // 服务器错误用notify显示，更醒目
+      showNotify({ type: 'danger', message, duration: 3000 })
+    } else {
+      showToast(message)
+    }
+    
     return Promise.reject(error)
   }
 )

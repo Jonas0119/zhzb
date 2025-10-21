@@ -5,65 +5,39 @@ export const useUserStore = defineStore('user', {
   state: () => ({
     // 用户基本信息
     userInfo: {
-      id: 'e463147c',
-      username: '用户e463147c',
-      phone: '13800138000',
+      id: '',
+      username: '',
+      phone: '',
       avatar: '',
       role: 'user'
     },
 
-    // 积分余额
+    // 积分余额 - 未登录默认为0
     points: {
-      AIC: 1000.0000,
-      HH: 1000.0000
+      AIC: 0,
+      HH: 0
     },
 
-    // 冻结积分
+    // 冻结积分 - 未登录默认为0
     frozenPoints: {
-      AIC: 0.0000,
-      HH: 0.0000
+      AIC: 0,
+      HH: 0
     },
 
-    // 钱包余额
+    // 钱包余额 - 未登录默认为0
     wallet: {
-      balance: 10000.00,
-      frozenBalance: 0.00
+      balance: 0,
+      frozenBalance: 0
     },
 
-    // 银行卡信息
-    bankCards: [
-      {
-        id: 1,
-        cardNumber: '**** **** **** 1234',
-        bankName: '中国银行',
-        isDefault: true
-      }
-    ],
+    // 银行卡信息 - 未登录默认为空数组
+    bankCards: [],
 
-    // 我的订单
-    myOrders: [
-      {
-        id: 1,
-        type: 'sell',
-        pointType: 'AIC',
-        amount: 1000,
-        unitPrice: 10.00,
-        totalPrice: 10000.00,
-        remainingAmount: 500,
-        status: 'active',
-        createdAt: '2024-01-15 10:30:00'
-      },
-      {
-        id: 2,
-        type: 'buy',
-        pointType: 'HH',
-        amount: 200,
-        unitPrice: 15.00,
-        totalPrice: 3000.00,
-        status: 'completed',
-        createdAt: '2024-01-14 15:20:00'
-      }
-    ]
+    // 我的订单 - 未登录默认为空数组
+    myOrders: [],
+
+    // 数据加载状态
+    isLoaded: false
   }),
 
   getters: {
@@ -89,11 +63,50 @@ export const useUserStore = defineStore('user', {
   },
 
   actions: {
+    // 初始化用户数据（登录后自动调用）
+    async initUserData() {
+      if (this.isLoaded) return // 已加载则跳过
+      
+      try {
+        // 并行加载用户信息和钱包信息
+        const [profile, walletInfo] = await Promise.all([
+          userApi.getProfile(),
+          this.fetchWalletInfo()
+        ])
+        
+        this.userInfo = {
+          id: profile.id,
+          username: profile.username,
+          phone: profile.phone || '',
+          avatar: '',
+          role: profile.role || 'user'
+        }
+        
+        this.isLoaded = true
+      } catch (error) {
+        console.error('初始化用户数据失败:', error)
+        // 失败时保持默认值（0）
+      }
+    },
+
+    // 重置状态（登出时调用）
+    resetState() {
+      this.userInfo = { id: '', username: '', phone: '', avatar: '', role: 'user' }
+      this.points = { AIC: 0, HH: 0 }
+      this.frozenPoints = { AIC: 0, HH: 0 }
+      this.wallet = { balance: 0, frozenBalance: 0 }
+      this.bankCards = []
+      this.myOrders = []
+      this.isLoaded = false
+    },
+
     // 登录
     async login(payload) {
       const res = await userApi.login(payload)
       localStorage.setItem('token', res.token)
       localStorage.setItem('user', JSON.stringify(res.user))
+      
+      // 设置用户基本信息
       this.userInfo = {
         id: res.user.id,
         username: res.user.username,
@@ -101,7 +114,10 @@ export const useUserStore = defineStore('user', {
         avatar: '',
         role: res.user.role || 'user'
       }
-      // 可从后端加载余额/积分，这里保持现有结构，后续替换为接口
+      
+      // 登录后自动加载用户数据
+      await this.initUserData()
+      
       return res
     },
 
@@ -110,6 +126,8 @@ export const useUserStore = defineStore('user', {
       const res = await userApi.register(payload)
       localStorage.setItem('token', res.token)
       localStorage.setItem('user', JSON.stringify(res.user))
+      
+      // 设置用户基本信息
       this.userInfo = {
         id: res.user.id,
         username: res.user.username,
@@ -117,7 +135,18 @@ export const useUserStore = defineStore('user', {
         avatar: '',
         role: res.user.role || 'user'
       }
+      
+      // 注册后自动加载用户数据
+      await this.initUserData()
+      
       return res
+    },
+
+    // 登出
+    logout() {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      this.resetState()
     },
 
     // 拉取用户信息
@@ -132,6 +161,7 @@ export const useUserStore = defineStore('user', {
       }
       return user
     },
+    
     // 更新积分
     updatePoints(pointType, amount) {
       if (this.points[pointType] !== undefined) {
